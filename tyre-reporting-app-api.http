@@ -1,0 +1,6 @@
+@tyre_reporting_app_api_HostAddress = http://localhost:5289
+
+GET {{tyre_reporting_app_api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
