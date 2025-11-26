@@ -9,5 +9,7 @@ namespace tyre_reporting_app_api.Interfaces
         Task<bool> InsertJob(string regNumber, DateTime date, SaveJobDto saveJobDto);
 
         Task<Dictionary<string, List<DateTime>>> ListJobs();
+
+        Task<List<TyreChangeViewDto>> GetJobDetails(string regNumber, DateTime date);
     }
 }

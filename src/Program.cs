@@ -78,4 +78,12 @@ app.MapGet("/listJobs", async (IStorageInteractor storageInteractor) =>
 .WithName("ListJobs")
 .WithOpenApi();
 
+app.MapGet("/jobDetails", async (string regNumber, DateTime date, IStorageInteractor storageInteractor) =>
+{
+    var jobDetails = await storageInteractor.GetJobDetails(regNumber, date);
+    return Results.Ok(jobDetails);
+})
+.WithName("JobDetails")
+.WithOpenApi();
+
 app.Run();

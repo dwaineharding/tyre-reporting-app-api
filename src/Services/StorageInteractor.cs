@@ -1,6 +1,7 @@
 ﻿using Azure;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
+using Azure.Storage.Sas;
 using System.ComponentModel;
 using System.Globalization;
 using tyre_reporting_app_api.Interfaces;
@@ -87,6 +88,55 @@ namespace tyre_reporting_app_api.Services
             }
 
             return jobs;
+        }
+        
+        public async Task<List<TyreChangeViewDto>> GetJobDetails(string regNumber, DateTime date)
+        {
+            var jobPrefix = $"{JobsDirectory}{GetJobFolderName(regNumber, date)}/";
+            var blobs = _blobContainerClient.GetBlobsAsync(prefix: jobPrefix);
+            var tyreChanges = new List<TyreChangeViewDto>();
+
+            await foreach(var blob in blobs)
+            {
+                // check if the blob.Name contains tyre position from Constants.TyrePositions
+                foreach (var tyrePosition in Constants.TyrePositions)
+                {
+                    if (blob.Name.Contains($"/{tyrePosition}/"))
+                    {
+                        var tyreChange = tyreChanges.FirstOrDefault(tc => tc.TyrePosition == tyrePosition);
+                        if (tyreChange == null)
+                        {
+                            tyreChange = new TyreChangeViewDto
+                            {
+                                TyrePosition = tyrePosition
+                            };
+                            tyreChanges.Add(tyreChange);
+                        }
+
+                        var blobClient = _blobContainerClient.GetBlobClient(blob.Name);
+
+                        var sasBuilder = new BlobSasBuilder()
+                        {
+                            BlobContainerName = blobClient.BlobContainerName,
+                            BlobName = blobClient.Name,
+                            Resource = "b", // 'b' for blob
+                            ExpiresOn = DateTimeOffset.UtcNow.AddMinutes(5)
+                        };
+                        sasBuilder.SetPermissions(BlobSasPermissions.Read);
+
+                        if (blob.Name.Contains("preImage"))
+                        {
+                            tyreChange.PreImageUrl = blobClient.GenerateSasUri(sasBuilder).ToString();
+                        }
+                        else if (blob.Name.Contains("postImage"))
+                        {
+                            tyreChange.PostImageUrl = blobClient.GenerateSasUri(sasBuilder).ToString();
+                        }
+                    }
+                }
+            }
+
+            return tyreChanges;
         }
 
         private async Task HandleImage(string imagePath, IFormFile image)
