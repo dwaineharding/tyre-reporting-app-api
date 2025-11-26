@@ -1,4 +1,4 @@
-jobs/
-obj/
+src/jobs/
+src/obj/
 .vs/
-bin/
+src/bin/
