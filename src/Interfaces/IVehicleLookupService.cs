@@ -4,6 +4,6 @@ namespace tyre_reporting_app_api.Interfaces
 {
     public interface IVehicleLookupService
     {
-        VehicleDto LookupByRegistration(string regNumber);
+        Task<VehicleDto> LookupByRegistration(string regNumber);
     }
 }

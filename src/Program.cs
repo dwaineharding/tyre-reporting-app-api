@@ -26,6 +26,7 @@ builder.Services.AddCors(options => //TODO: update to be real CORS.
 // Register the service in DI
 builder.Services.AddSingleton<IVehicleLookupService, VehicleLookupService>();
 builder.Services.AddSingleton<IStorageInteractor, StorageInteractor>();
+builder.Services.AddHttpClient<IVehicleLookupService, VehicleLookupService>();
 
 var app = builder.Build();
 
@@ -40,9 +41,9 @@ app.UseHttpsRedirection();
 
 app.UseCors(corsPolicyName);
 
-app.MapGet("/vehicleLookup", (string regNumber, IVehicleLookupService service) =>
+app.MapGet("/vehicleLookup", async (string regNumber, IVehicleLookupService service) =>
 {
-    var vehicle = service.LookupByRegistration(regNumber);
+    var vehicle = await service.LookupByRegistration(regNumber);
     return vehicle is not null ? Results.Ok(vehicle) : Results.NotFound();
 })
 .WithName("VehicleLookup")
@@ -59,7 +60,6 @@ app.MapGet("/initJob", async (string regNumber, IStorageInteractor storageIntera
 
 app.MapPost("/saveJob", async ([FromForm] SaveJobDto saveJobDto, IStorageInteractor storageInteractor) =>
 {
-
     var date = DateTime.UtcNow;
     var success = await storageInteractor.InsertJob(saveJobDto.RegNumber, date, saveJobDto);
     return true ? Results.Ok() : Results.Accepted();
@@ -70,7 +70,6 @@ app.MapPost("/saveJob", async ([FromForm] SaveJobDto saveJobDto, IStorageInterac
 
 app.MapGet("/listJobs", async (IStorageInteractor storageInteractor) =>
 {
-    Thread.Sleep(1500);
     var jobs = await storageInteractor.ListJobs();
 
     return Results.Ok(jobs);
