@@ -14,12 +14,12 @@ namespace tyre_reporting_app_api.Services
 
         public async Task<VehicleDto> LookupByRegistration(string regNumber)
         {
-            _httpClient.DefaultRequestHeaders.Add("ocp-apim-subscription-key", "79a1bd3b76164ef4b2301de0c1b2e5bb");
-            
-            var response = await _httpClient.GetAsync($"https://api.confused.com/engagementtools/v1/vehicle-lookup/registration?registrationNumber={regNumber}");
-            response.EnsureSuccessStatusCode();
-            
-            var vehicleData = await response.Content.ReadFromJsonAsync<VehicleLookupResponse>();
+            // If and when required, use the client to call an external API.
+
+            var vehicleData = new VehicleLookupResponse
+            {
+                CarInfo = new CarInfo("Toyota", "Corolla", "Petrol", 2020)
+            };
 
             if (vehicleData is null)
             {
