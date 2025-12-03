@@ -14,7 +14,7 @@ namespace tyre_reporting_app_api.Services
 
         public async Task<VehicleDto> LookupByRegistration(string regNumber)
         {
-            // If and when required, use the client to call an external API.
+            // TODO: If and when required, use the client to call an external API.
 
             var vehicleData = new VehicleLookupResponse
             {
