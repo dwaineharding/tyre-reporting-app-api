@@ -10,6 +10,6 @@ namespace tyre_reporting_app_api.Interfaces
 
         Task<Dictionary<string, List<DateTime>>> ListJobs();
 
-        Task<List<TyreChangeViewDto>> GetJobDetails(string regNumber, DateTime date);
+        Task<JobReviewDto> GetJobDetails(string regNumber, DateTime date);
     }
 }

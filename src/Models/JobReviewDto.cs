@@ -1,12 +1,9 @@
 ﻿namespace tyre_reporting_app_api.Models
 {
-    public class TyreChangeViewDto
+    public class JobReviewDto
     {
-        public required string TyrePosition { get; set; }
+        public List<string>? JobDescriptions { get; set; }
 
-        public string? PreImageUrl { get; set; }
-
-        public string? PostImageUrl { get; set; }
-
+        public List<TyreChangeViewDto>? TyreChanges { get; set; }
     }
 }

@@ -57,7 +57,19 @@ namespace tyre_reporting_app_api.Services
                 await HandleImage(postImagePath, tyreChange.PostImage);
             }
 
+            // Save job descriptions as json file
+            await HandleJobDescriptions(saveJobDto, localPath);
+
             return true;
+        }
+
+        private async Task HandleJobDescriptions(SaveJobDto saveJobDto, string localPath)
+        {
+            string descriptionsPath = Path.Combine(localPath, "jobDescriptions.json");
+            var descriptionsJson = System.Text.Json.JsonSerializer.Serialize(saveJobDto.JobDescriptions);
+            await File.WriteAllTextAsync(descriptionsPath, descriptionsJson);
+            var descBlobClient = _blobContainerClient.GetBlobClient(descriptionsPath);
+            await descBlobClient.UploadAsync(descriptionsPath, overwrite: true);
         }
 
         public async Task<Dictionary<string, List<DateTime>>> ListJobs()
@@ -90,11 +102,15 @@ namespace tyre_reporting_app_api.Services
             return jobs;
         }
         
-        public async Task<List<TyreChangeViewDto>> GetJobDetails(string regNumber, DateTime date)
+        public async Task<JobReviewDto> GetJobDetails(string regNumber, DateTime date)
         {
             var jobPrefix = $"{JobsDirectory}{GetJobFolderName(regNumber, date)}/";
             var blobs = _blobContainerClient.GetBlobsAsync(prefix: jobPrefix);
-            var tyreChanges = new List<TyreChangeViewDto>();
+            var jobReview = new JobReviewDto
+            {
+                JobDescriptions = [],
+                TyreChanges = []
+            };
 
             await foreach(var blob in blobs)
             {
@@ -103,14 +119,15 @@ namespace tyre_reporting_app_api.Services
                 {
                     if (blob.Name.Contains($"/{tyrePosition}/"))
                     {
-                        var tyreChange = tyreChanges.FirstOrDefault(tc => tc.TyrePosition == tyrePosition);
+                        var tyreChange = jobReview.TyreChanges.FirstOrDefault(tc => tc.TyrePosition == tyrePosition);
+
                         if (tyreChange == null)
                         {
                             tyreChange = new TyreChangeViewDto
                             {
                                 TyrePosition = tyrePosition
                             };
-                            tyreChanges.Add(tyreChange);
+                            jobReview.TyreChanges.Add(tyreChange);
                         }
 
                         var blobClient = _blobContainerClient.GetBlobClient(blob.Name);
@@ -120,7 +137,8 @@ namespace tyre_reporting_app_api.Services
                             BlobContainerName = blobClient.BlobContainerName,
                             BlobName = blobClient.Name,
                             Resource = "b", // 'b' for blob
-                            ExpiresOn = DateTimeOffset.UtcNow.AddMinutes(5)
+                            ExpiresOn = DateTimeOffset.UtcNow.AddMinutes(5),
+                            
                         };
                         sasBuilder.SetPermissions(BlobSasPermissions.Read);
 
@@ -134,9 +152,18 @@ namespace tyre_reporting_app_api.Services
                         }
                     }
                 }
+
+                if(blob.Name.EndsWith("jobDescriptions.json"))
+                {
+                    var descriptionsBlobClient = _blobContainerClient.GetBlobClient($"{jobPrefix}jobDescriptions.json");
+                    var descriptionsJson = await descriptionsBlobClient.DownloadContentAsync();
+                    var jobDescriptions = System.Text.Json.JsonSerializer.Deserialize<List<string>>(descriptionsJson.Value.Content.ToString());
+
+                    jobReview.JobDescriptions = jobDescriptions ?? [];
+                }
             }
 
-            return tyreChanges;
+            return jobReview;
         }
 
         private async Task HandleImage(string imagePath, IFormFile image)

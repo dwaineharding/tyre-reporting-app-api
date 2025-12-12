@@ -4,6 +4,7 @@ namespace tyre_reporting_app_api.Models
     {
         public required string RegNumber { get; set; }
         public required List<TyreChangeDto> TyreChanges { get; set; }
+        public required List<string> JobDescriptions { get; set; }
 
         public class TyreChangeDto
         {
