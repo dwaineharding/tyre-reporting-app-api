@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Globalization;
 using tyre_reporting_app_api.Interfaces;
 using tyre_reporting_app_api.Models;
+using System.Text.Json;
 
 namespace tyre_reporting_app_api.Services
 {
@@ -15,6 +16,8 @@ namespace tyre_reporting_app_api.Services
         private readonly BlobContainerClient _blobContainerClient;
         private const string ContainerName = "t-r-app";
         private const string JobsDirectory = "jobs/";
+        private const string InitFileName = "init.json";
+        private const string JobDescriptionsFileName = "jobDescriptions.json";
 
         public StorageInteractor(IConfiguration configuration)
         {
@@ -23,14 +26,16 @@ namespace tyre_reporting_app_api.Services
             _blobContainerClient = blobServiceClient.GetBlobContainerClient(ContainerName);
         }
 
-        public async Task<bool> CreateContainer(string regNumber, DateTime date)
+        public async Task<bool> CreateContainer(string regNumber, string user, DateTime date)
         {
             string localPath = Path.Combine(JobsDirectory, GetJobFolderName(regNumber, date));
             Directory.CreateDirectory(localPath);
 
-            string fileName = "init.txt";
+            string fileName = "init.json";
             string localFilePath = Path.Combine(localPath, fileName);
-            await File.WriteAllTextAsync(localFilePath, "Init job info.");
+            var initJobInfo = new MetadataDto(user);
+            var initJobInfoJson = JsonSerializer.Serialize(initJobInfo);
+            await File.WriteAllTextAsync(localFilePath, initJobInfoJson);
 
 
             var blobClient = _blobContainerClient.GetBlobClient(localFilePath);
@@ -65,8 +70,8 @@ namespace tyre_reporting_app_api.Services
 
         private async Task HandleJobDescriptions(SaveJobDto saveJobDto, string localPath)
         {
-            string descriptionsPath = Path.Combine(localPath, "jobDescriptions.json");
-            var descriptionsJson = System.Text.Json.JsonSerializer.Serialize(saveJobDto.JobDescriptions);
+            string descriptionsPath = Path.Combine(localPath, JobDescriptionsFileName);
+            var descriptionsJson = JsonSerializer.Serialize(saveJobDto.JobDescriptions);
             await File.WriteAllTextAsync(descriptionsPath, descriptionsJson);
             var descBlobClient = _blobContainerClient.GetBlobClient(descriptionsPath);
             await descBlobClient.UploadAsync(descriptionsPath, overwrite: true);
@@ -153,13 +158,24 @@ namespace tyre_reporting_app_api.Services
                     }
                 }
 
-                if(blob.Name.EndsWith("jobDescriptions.json"))
+                if(blob.Name.EndsWith(JobDescriptionsFileName))
                 {
-                    var descriptionsBlobClient = _blobContainerClient.GetBlobClient($"{jobPrefix}jobDescriptions.json");
+                    var descriptionsBlobClient = _blobContainerClient.GetBlobClient($"{jobPrefix}{JobDescriptionsFileName}");
                     var descriptionsJson = await descriptionsBlobClient.DownloadContentAsync();
-                    var jobDescriptions = System.Text.Json.JsonSerializer.Deserialize<List<string>>(descriptionsJson.Value.Content.ToString());
+                    var jobDescriptions = JsonSerializer.Deserialize<List<string>>(descriptionsJson.Value.Content.ToString());
 
                     jobReview.JobDescriptions = jobDescriptions ?? [];
+                }
+
+                if(blob.Name.EndsWith(InitFileName))
+                {
+                    var initBlobClient = _blobContainerClient.GetBlobClient($"{jobPrefix}{InitFileName}");
+                    var initJson = await initBlobClient.DownloadContentAsync();
+                    var initData = JsonSerializer.Deserialize<MetadataDto>(initJson.Value.Content.ToString());
+                    if (initData != null)
+                    {
+                        jobReview.User = initData.User;
+                    }
                 }
             }
 

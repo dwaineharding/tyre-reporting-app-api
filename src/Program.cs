@@ -49,10 +49,10 @@ app.MapGet("/vehicleLookup", async (string regNumber, IVehicleLookupService serv
 .WithName("VehicleLookup")
 .WithOpenApi();
 
-app.MapGet("/initJob", async (string regNumber, IStorageInteractor storageInteractor) =>
+app.MapGet("/initJob", async (string regNumber, string user, IStorageInteractor storageInteractor) =>
 {
     var date = DateTime.UtcNow;
-    var success = await storageInteractor.CreateContainer(regNumber, date);
+    var success = await storageInteractor.CreateContainer(regNumber, user, date);
     return success ? Results.Ok() : Results.Accepted();
 })
 .WithName("InitJob")

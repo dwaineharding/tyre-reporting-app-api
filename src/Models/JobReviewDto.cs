@@ -5,5 +5,7 @@
         public List<string>? JobDescriptions { get; set; }
 
         public List<TyreChangeViewDto>? TyreChanges { get; set; }
+
+        public string? User { get; set; }
     }
 }
