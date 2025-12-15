@@ -10,6 +10,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddApplicationInsightsTelemetry();
+
 const string corsPolicyName = "AllowAll";
 
 builder.Services.AddCors(options => //TODO: update to be real CORS.
