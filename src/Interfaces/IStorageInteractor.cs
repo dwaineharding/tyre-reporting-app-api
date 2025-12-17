@@ -11,5 +11,7 @@ namespace tyre_reporting_app_api.Interfaces
         Task<Dictionary<string, List<DateTime>>> ListJobs();
 
         Task<JobReviewDto> GetJobDetails(string regNumber, DateTime date);
+
+        Task<string> StoreInvoice(IFormFile invoice, string regNumber, DateTime date);
     }
 }

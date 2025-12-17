@@ -2,11 +2,10 @@
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using Azure.Storage.Sas;
-using System.ComponentModel;
 using System.Globalization;
+using System.Text.Json;
 using tyre_reporting_app_api.Interfaces;
 using tyre_reporting_app_api.Models;
-using System.Text.Json;
 
 namespace tyre_reporting_app_api.Services
 {
@@ -55,11 +54,11 @@ namespace tyre_reporting_app_api.Services
 
                 var preFileExtension = Path.GetExtension(tyreChange.PreImage.FileName);
                 string preImagePath = Path.Combine(changePath, $"preImage{preFileExtension}");
-                await HandleImage(preImagePath, tyreChange.PreImage);
+                await HandleFile(preImagePath, tyreChange.PreImage);
 
                 var postFileExtension = Path.GetExtension(tyreChange.PostImage.FileName);
                 string postImagePath = Path.Combine(changePath, $"postImage{postFileExtension}");
-                await HandleImage(postImagePath, tyreChange.PostImage);
+                await HandleFile(postImagePath, tyreChange.PostImage);
             }
 
             // Save job descriptions as json file
@@ -182,13 +181,25 @@ namespace tyre_reporting_app_api.Services
             return jobReview;
         }
 
-        private async Task HandleImage(string imagePath, IFormFile image)
+        public async Task<string> StoreInvoice(IFormFile invoice, string regNumber, DateTime date)
         {
-            using var imageStream = new FileStream(imagePath, FileMode.Create);
-            await image.CopyToAsync(imageStream);
+            string localPath = Path.Combine(JobsDirectory, GetJobFolderName(regNumber, date));
+            string invoicePath = Path.Combine(localPath, invoice.FileName);
 
-            var preBlobClient = _blobContainerClient.GetBlobClient(imagePath);
-            var preRes = await preBlobClient.UploadAsync(imagePath);
+            // create path if it doesnt exist
+            Directory.CreateDirectory(localPath);
+
+            await HandleFile(invoicePath, invoice);
+
+            return invoicePath;
+        }
+        private async Task HandleFile(string filePath, IFormFile image)
+        {
+            using var fileStream = new FileStream(filePath, FileMode.Create);
+            await image.CopyToAsync(fileStream);
+
+            var preBlobClient = _blobContainerClient.GetBlobClient(filePath);
+            var preRes = await preBlobClient.UploadAsync(filePath, overwrite: true);
         }
 
         private static string GetJobFolderName(string regNumber, DateTime date)

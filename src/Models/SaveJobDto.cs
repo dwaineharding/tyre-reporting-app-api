@@ -6,6 +6,8 @@ namespace tyre_reporting_app_api.Models
         public required List<TyreChangeDto> TyreChanges { get; set; }
         public required List<string> JobDescriptions { get; set; }
 
+        public required string User { get; set; }
+
         public class TyreChangeDto
         {
             public required string TyrePosition { get; set; }
