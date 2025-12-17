@@ -99,29 +99,38 @@ app.MapGet("/jobDetails", async (string regNumber, DateTime date, IStorageIntera
 .WithName("JobDetails")
 .WithOpenApi();
 
-app.MapPost("/storeInvoice", async ([FromForm]StoreInvoiceDto storeInvoiceDto, IEmailSender emailSender, IStorageInteractor storageInteractor) =>
+app.MapPost("/storeInvoice", async ([FromForm]StoreInvoiceDto storeInvoiceDto, IStorageInteractor storageInteractor) =>
 {
-    var invoicePath = await storageInteractor.StoreInvoice(storeInvoiceDto.File, storeInvoiceDto.RegNumber, storeInvoiceDto.Date);
+    var invoiceName = await storageInteractor.StoreInvoice(storeInvoiceDto.File, storeInvoiceDto.RegNumber, storeInvoiceDto.Date);
+
+    return Results.Ok(invoiceName);
+})
+.WithName("StoreInvoice")
+.WithOpenApi()
+.DisableAntiforgery();
+
+app.MapPost("/sendInvoice", async ([FromBody]SendEmailDto sendEmailDto, IEmailSender emailSender, IStorageInteractor storageInteractor) =>
+{
+    var invoicePath = storageInteractor.GetInvoicePath(sendEmailDto.RegNumber, sendEmailDto.Date, sendEmailDto.InvoiceName);
 
     var content = $"Dear Customer,<br/><br/>" +
-    $"Please find attached the invoice {storeInvoiceDto.InvoiceNumber} for the recent tyre " +
-    $"service on your vehicle {storeInvoiceDto.RegNumber}.<br/><br/>" +
+    $"Please find attached the invoice for the recent tyre " +
+    $"service on your vehicle {sendEmailDto.RegNumber}.<br/><br/>" +
     $"Thank you for choosing our services!<br/><br/>" +
     $"Best regards,<br/>Tyre Reporting App Team";
 
     var emailAttachment = new EmailAttachment
     {
-        Filename = storeInvoiceDto.File.FileName,
-        ContentType = storeInvoiceDto.File.ContentType,
+        Filename = sendEmailDto.InvoiceName,
+        ContentType = "application/pdf",
         Content = await File.ReadAllBytesAsync(invoicePath)
     };
 
-    await emailSender.SendEmailAsync($"Invoice - {storeInvoiceDto.InvoiceNumber}", content, emailAttachment);
+    await emailSender.SendEmailAsync($"Invoice - {sendEmailDto.RegNumber}", content, emailAttachment);
 
     return Results.Ok();
 })
-.WithName("StoreInvoice")
-.WithOpenApi()
-.DisableAntiforgery();
+.WithName("SendInvoice")
+.WithOpenApi();
 
 app.Run();

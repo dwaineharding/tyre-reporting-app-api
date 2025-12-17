@@ -191,8 +191,15 @@ namespace tyre_reporting_app_api.Services
 
             await HandleFile(invoicePath, invoice);
 
-            return invoicePath;
+            return invoice.FileName;
         }
+
+        public string GetInvoicePath(string regNumber, DateTime date, string invoiceFileName)
+        {
+            string jobFolderName = GetJobFolderName(regNumber, date);
+            return Path.Combine(JobsDirectory, jobFolderName, invoiceFileName);
+        }
+
         private async Task HandleFile(string filePath, IFormFile image)
         {
             using var fileStream = new FileStream(filePath, FileMode.Create);

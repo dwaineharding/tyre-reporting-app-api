@@ -13,5 +13,7 @@ namespace tyre_reporting_app_api.Interfaces
         Task<JobReviewDto> GetJobDetails(string regNumber, DateTime date);
 
         Task<string> StoreInvoice(IFormFile invoice, string regNumber, DateTime date);
+
+        string GetInvoicePath(string regNumber, DateTime date, string invoiceFileName);
     }
 }
